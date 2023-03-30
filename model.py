@@ -108,11 +108,11 @@ def get_image_vqvae(latent_dim=EMBEDDING_DIM, num_embeddings=NUM_EMBEDDINGS, num
 			num_embeddings = num_embeddings,
 			commitment_cost=COMMITMENT_COST,
 			name="vector_quantizer")
-	encoder = get_encoder(latent_dim)
-	decoder = get_decoder(latent_dim)
+	encoder = get_encoder(latent_dim = latent_dim)
 	inputs = tf.keras.Input(shape=(IMAGE_HEIGHT, IMAGE_WIDTH, num_channels))
 	encoder_outputs = encoder(inputs)
 	encoder_shape = tf.shape(encoder_outputs)[1:]
+	decoder = get_decoder(encoder_shape, latent_dim = latent_dim)
 	quantized_latents = vq_layer(encoder_outputs)
 	reconstructions = decoder(encoder_shape, quantized_latents)
 	return tf.keras.Model(inputs, reconstructions, name=name)
