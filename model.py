@@ -1,6 +1,6 @@
 import tensorflow as tf
-from constants import *
-from quantizers import *
+from .constants import *
+from .quantizers import *
 
 class ResBlock(tf.keras.layers.Layer):
 	"""

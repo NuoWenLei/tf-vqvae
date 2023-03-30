@@ -130,14 +130,15 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 		# Initialize embedding weights
 		initializer = tf.keras.initializers.RandomNormal()
 		constant_initializer = tf.keras.initializers.Constant(0.)
+		embed_init = initializer(shape = (embedding_dim, num_embeddings))
 		self.embeddings = tf.Variable(
-					initial_value = initializer(shape = (embedding_dim, num_embeddings)),
+					initial_value = embed_init,
 					name="embeddings")
 		self._ema_cluster_size = tf.Variable(
 			initial_value = constant_initializer(shape = (num_embeddings)),
 			name = 'ema_cluster_size')
 		self._ema_w = tf.Variable(
-			initial_value = self.embeddings.initial_value)
+			initial_value = embed_init)
 
 	def call(self, inputs):
 		"""Connects the module to some inputs.
