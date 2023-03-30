@@ -1,18 +1,7 @@
-# Copyright 2018 The Sonnet Authors. All Rights Reserved.
-#
-# Licensed under the Apache License, Version 2.0 (the "License");
-# you may not use this file except in compliance with the License.
-# You may obtain a copy of the License at
-#
-#    http://www.apache.org/licenses/LICENSE-2.0
-#
-# Unless required by applicable law or agreed to in writing, software
-# distributed under the License is distributed on an "AS IS" BASIS,
-# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or  implied.
-# See the License for the specific language governing permissions and
-# limitations under the License.
-# ============================================================================
-"""Sonnet implementation of VQ-VAE https://arxiv.org/abs/1711.00937."""
+# Sources:
+# - DeepMind Sonnet: https://github.com/deepmind/sonnet/blob/v1/sonnet/python/modules/nets/vqvae.py
+# - Keras Examples: https://keras.io/examples/generative/vq_vae/#additional-notes
+# - PyTorch Implementation by nadavbh12: https://github.com/nadavbh12/VQ-VAE/blob/a360e77d43ec43dd5a989f057cbf8e0843bb9b1f/vq_vae/auto_encoder.py
 
 from __future__ import absolute_import
 from __future__ import division
@@ -168,11 +157,6 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 			encoding_indices: Tensor containing the discrete encoding indices, ie
 			which element of the quantized space each input element was mapped to.
 		"""
-		# Ensure that the weights are read fresh for each timestep, which otherwise
-		# would not be guaranteed in an RNN setup. Note that this relies on inputs
-		# having a data dependency with the output of the previous timestep - if
-		# this is not the case, there is no way to serialize the order of weight
-		# updates within the module, so explicit external dependencies must be used.
 		flat_inputs = tf.reshape(inputs, [-1, self.embedding_dim])
 
 		encoding_indices = self.get_code_indices(flat_inputs)
