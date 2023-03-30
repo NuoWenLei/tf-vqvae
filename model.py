@@ -1,0 +1,75 @@
+import tensorflow as tf
+from constants import IMAGE_HEIGHT, IMAGE_WIDTH
+from quantizers import *
+
+class ResBlock(tf.keras.layers.Layer):
+	def __init__(self, out_channels, mid_channels=None, bn=False, name = None):
+		super(ResBlock, self).__init__(name = name)
+
+		if mid_channels is None:
+			mid_channels = out_channels
+
+		layers = [
+			tf.keras.layers.Activation(tf.keras.activations.relu),
+			tf.keras.layers.Conv2D(mid_channels, kernel_size = 3, strides = 1, padding = "same"),
+			tf.keras.layers.Activation(tf.keras.activations.relu),
+			tf.keras.layers.Conv2D(out_channels, kernel_size = 1, strides = 1, padding = "valid")
+		]
+		if bn:
+			layers.insert(2, tf.keras.layers.BatchNormalization())
+		self.convs = tf.keras.Sequential(layers)
+
+	def call(self, x):
+		return x + self.convs(x)
+
+
+def get_encoder(latent_dim=512, batchnorm = True, name="encoder"):
+	encoder_inputs = tf.keras.Input(shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3))
+	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(encoder_inputs)
+	norm1 = tf.keras.layers.BatchNormalization()(conv1)
+	relu1 = tf.keras.activations.relu(norm1)
+	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(relu1)
+	norm2 = tf.keras.layers.BatchNormalization()(conv2)
+	relu2 = tf.keras.activations.relu(norm2)
+
+	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(relu2)
+	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
+	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(resnorm1)
+	encoder_outputs = tf.keras.layers.BatchNormalization()(res2)
+
+	return tf.keras.Model(encoder_inputs, encoder_outputs, name=name)
+
+
+def get_decoder(input_shape, latent_dim=512, num_channels = 3, name="decoder"):
+
+	decoder_inputs = tf.keras.Input(shape=input_shape)
+
+	res1 = ResBlock(latent_dim, name = f"{name}_resblock1")(decoder_inputs)
+	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
+	res2 = ResBlock(latent_dim, name = f"{name}_resblock2")(resnorm1)
+
+	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(res2)
+	norm1 = tf.keras.layers.BatchNormalization()(conv1)
+	relu1 = tf.keras.activations.relu(norm1)
+
+	decoder_outputs = tf.keras.layers.Conv2DTranspose(num_channels, kernel_size=4, strides = 2, padding = "same")(relu1)
+
+	decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
+
+	return tf.keras.Model(decoder_inputs, decoder_tanh, name=name)
+
+def get_vqvae(latent_dim=512, num_embeddings=64, num_channels = 3):
+    vq_layer = VectorQuantizer(
+	    embedding_dim = latent_dim, 
+		num_embeddings = num_embeddings,
+		commitment_cost=0.25,
+		name="vector_quantizer")
+    encoder = get_encoder(latent_dim)
+    decoder = get_decoder(latent_dim)
+    inputs = tf.keras.Input(shape=(IMAGE_HEIGHT, IMAGE_WIDTH, num_channels))
+    encoder_outputs = encoder(inputs)
+    encoder_shape = tf.shape(encoder_outputs)[1:]
+    quantized_latents = vq_layer(encoder_outputs)
+    reconstructions = decoder(encoder_shape, quantized_latents)
+    return tf.keras.Model(inputs, reconstructions, name="vq_vae")
+
