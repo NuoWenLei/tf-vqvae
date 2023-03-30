@@ -44,7 +44,7 @@ class VectorQuantizer(tf.keras.layers.Layer):
 		initializer = tf.keras.initializers.RandomUniform(-1., 1.)
 		self.embeddings = tf.Variable(
 					initial_value = initializer(shape = (embedding_dim, num_embeddings)),
-					trainable = True, name="embeddings")
+					trainable = True, name=f"{name}_embeddings")
 				
 	def call(self, x):
 		# Calculate the input shape of the inputs and
@@ -133,7 +133,7 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 		embed_init = initializer(shape = (embedding_dim, num_embeddings))
 		self.embeddings = tf.Variable(
 					initial_value = embed_init,
-					name="embeddings")
+					name=f"{name}_embeddings")
 		self._ema_cluster_size = tf.Variable(
 			initial_value = constant_initializer(shape = (num_embeddings)),
 			name = 'ema_cluster_size')
