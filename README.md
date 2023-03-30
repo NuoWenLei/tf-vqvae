@@ -1,4 +1,4 @@
-# tf-vqvae
+# tf_vqvae
 
 Personal Implementation of a Vector Quantized Convolutional Variational Auto-Encoder (VQ-CVAE) for my final project in [Computer Vision](https://browncsci1430.github.io/webpage/#).
 
