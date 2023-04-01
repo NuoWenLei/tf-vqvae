@@ -158,21 +158,25 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 			encoding_indices: Tensor containing the discrete encoding indices, ie
 			which element of the quantized space each input element was mapped to.
 		"""
+		input_shape = tf.shape(inputs)
 		flat_inputs = tf.reshape(inputs, [-1, self.embedding_dim])
 
 		encoding_indices = self.get_code_indices(flat_inputs)
 		encodings = tf.one_hot(encoding_indices, self.num_embeddings)
 		quantized = tf.matmul(encodings, self.embeddings, transpose_b=True)
+		quantized = tf.reshape(quantized, input_shape)
 		e_latent_loss = tf.reduce_mean((tf.stop_gradient(quantized) - inputs) ** 2)
 
 		if self.trainable:
-			updated_ema_cluster_size = moving_averages.assign_moving_average(
-				self._ema_cluster_size, tf.reduce_sum(encodings, 0), self.decay)
+			updated_ema_cluster_size = self._ema_cluster_size * self.decay\
+				  + (1 - self.decay) * tf.reduce_sum(encodings, 0)
 			dw = tf.matmul(flat_inputs, encodings, transpose_a=True)
-			updated_ema_w = moving_averages.assign_moving_average(self._ema_w, dw,
-																	self.decay)
+			updated_ema_w = self._ema_w.assign(
+				self._ema_w * self.decay\
+				  + (1 - self.decay) * dw)
+
 			n = tf.reduce_sum(updated_ema_cluster_size)
-			updated_ema_cluster_size = (
+			updated_ema_cluster_size = self._ema_cluster_size.assign(
 				(updated_ema_cluster_size + self.epsilon)
 				/ (n + self.num_embeddings * self.epsilon) * n)
 
@@ -187,7 +191,6 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 		
 		self.add_loss(loss)
 		quantized = inputs + tf.stop_gradient(quantized - inputs)
-
 		return quantized
 	
 	def get_code_indices(self, flattened_inputs):
