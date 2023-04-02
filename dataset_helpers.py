@@ -12,7 +12,7 @@ import requests
 import skimage
 from datasets import load_dataset, load_from_disk
 from datasets.utils.file_utils import get_datasets_user_agent
-from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE
+from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH
 
 USER_AGENT = get_datasets_user_agent()
 
@@ -78,16 +78,18 @@ def fetch_images(batch, num_threads, timeout=None, retries=0):
 		batch["image_status"] = status
 	return batch
 
-def load_dataset_by_splits(dataset_name = "sbu_captions", percent_splits = 1, load_local = False, disk_dir = None, save_local = False):
+def download_dataset_to_local_path(dataset_name = "sbu_captions", disk_dir = LOCAL_DATASET_PATH):
+	ds = load_dataset(dataset_name)
+	ds.save_to_disk(disk_dir)
+
+def load_dataset_by_splits(dataset_name = "sbu_captions", percent_splits = 1, load_local = False, disk_dir = None):
 	if load_local:
 		assert (disk_dir is not None), "local loading must provide directory of dataset"
-		ds = load_from_disk(disk_dir)
+		ds = load_dataset(disk_dir, split=[
+			f'train[{k}%:{k+percent_splits}%]' for k in range(0, 100, percent_splits)])
 	else:
 		ds = load_dataset(dataset_name, split=[
 			f'train[{k}%:{k+percent_splits}%]' for k in range(0, 100, percent_splits)])
-		if save_local:
-			assert (disk_dir is not None), "local saving must provide directory of dataset"
-			ds.save_to_disk(disk_dir)
 	return ds
 
 def fetch_images_of_dataset(ds):
@@ -110,31 +112,31 @@ def iter_dataset_by_batch(ds, with_indices = False, only_images = False):
 		
 		yield return_values
 
-def load_sbu_and_return_gen(load_local_path = None, save_local_path = None, with_indices = False, only_images = True):
-	if load_local_path is not None:
-		ds = load_dataset_by_splits(
-			dataset_name="sbu_captions",
-			percent_splits=1,
-			load_local = True,
-			disk_dir=load_local_path
-		)
-	else:
-		if save_local_path is not None:
-			ds = load_dataset_by_splits(
-				dataset_name="sbu_captions",
-				percent_splits=1,
-				load_local = False,
-				disk_dir=save_local_path,
-				save_local = True
-			)
-		else:
-			ds = load_dataset_by_splits(
-				dataset_name="sbu_captions",
-				percent_splits=1,
-				load_local = False,
-				save_local = False
-			)
+# def load_sbu_and_return_gen(load_local_path = None, save_local_path = None, with_indices = False, only_images = True):
+# 	if load_local_path is not None:
+# 		ds = load_dataset_by_splits(
+# 			dataset_name="sbu_captions",
+# 			percent_splits=1,
+# 			load_local = True,
+# 			disk_dir=load_local_path
+# 		)
+# 	else:
+# 		if save_local_path is not None:
+# 			ds = load_dataset_by_splits(
+# 				dataset_name="sbu_captions",
+# 				percent_splits=1,
+# 				load_local = False,
+# 				disk_dir=save_local_path,
+# 				save_local = True
+# 			)
+# 		else:
+# 			ds = load_dataset_by_splits(
+# 				dataset_name="sbu_captions",
+# 				percent_splits=1,
+# 				load_local = False,
+# 				save_local = False
+# 			)
 	
-	image_ds = fetch_images_of_dataset(ds)
-	return iter_dataset_by_batch(image_ds, with_indices = with_indices, only_images = only_images)
+# 	image_ds = fetch_images_of_dataset(ds)
+# 	return iter_dataset_by_batch(image_ds, with_indices = with_indices, only_images = only_images)
 	
