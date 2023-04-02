@@ -10,9 +10,6 @@ from __future__ import print_function
 
 import tensorflow as tf
 
-from tensorflow.python.training import moving_averages
-
-
 class VectorQuantizer(tf.keras.layers.Layer):
 	"""Sonnet module representing the VQ-VAE layer.
 	Implements the algorithm presented in
@@ -142,23 +139,6 @@ class VectorQuantizerEMA(tf.keras.layers.Layer):
 			initial_value = embed_init)
 
 	def call(self, inputs):
-		"""Connects the module to some inputs.
-		Args:
-		inputs: Tensor, final dimension must be equal to embedding_dim. All other
-			leading dimensions will be flattened and treated as a large batch.
-		is_training: boolean, whether this connection is to training data. When
-			this is set to False, the internal moving average statistics will not be
-			updated.
-		Returns:
-		dict containing the following keys and values:
-			quantize: Tensor containing the quantized version of the input.
-			loss: Tensor containing the loss to optimize.
-			perplexity: Tensor containing the perplexity of the encodings.
-			encodings: Tensor containing the discrete encodings, ie which element
-			of the quantized space each input element was mapped to.
-			encoding_indices: Tensor containing the discrete encoding indices, ie
-			which element of the quantized space each input element was mapped to.
-		"""
 		input_shape = tf.shape(inputs)
 		flat_inputs = tf.reshape(inputs, [-1, self.embedding_dim])
 
