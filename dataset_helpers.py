@@ -4,13 +4,10 @@ from functools import partial
 
 import io
 import urllib
-
-import PIL.Image
-import numpy as np
 import requests
 
-import skimage
-from datasets import load_dataset, load_from_disk
+from imports import Image, np, skimage
+from datasets import load_dataset
 from datasets.utils.file_utils import get_datasets_user_agent
 from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH
 
@@ -48,13 +45,13 @@ def fetch_single_image(image_url, timeout=None, retries=0):
 				headers={"user-agent": USER_AGENT},
 			)
 			with urllib.request.urlopen(request, timeout=timeout) as req:
-				image = PIL.Image.open(io.BytesIO(req.read()))
+				image = Image.open(io.BytesIO(req.read()))
 			break
 		except Exception:
 			image = None
 	return image
 
-default_image = np.array(PIL.Image.open(io.BytesIO(requests.get("http://static.flickr.com/2723/4385058960_b0f291553e.jpg").content)))
+default_image = np.array(Image.open(io.BytesIO(requests.get("http://static.flickr.com/2723/4385058960_b0f291553e.jpg").content)))
 preproc_im = resize_scale_and_pad(default_image, 128, 128)
 
 def fetch_images(batch, num_threads, timeout=None, retries=0):
@@ -97,20 +94,15 @@ def fetch_images_of_dataset(ds):
     	"num_threads": NUM_THREADS, "timeout": NUM_TIMEOUT, "retries": NUM_RETRIES})
 	return image_ds.filter(lambda x: x, input_columns="image_status")
 
-def iter_dataset_by_batch(ds, with_indices = False, only_images = False):
-	num_batches = len(ds) // BATCH_SIZE
+def iter_dataset_by_batch(ds, only_images = False, batch_size = BATCH_SIZE):
+	num_batches = len(ds) // batch_size
 	for b in range(num_batches):
-		batch = ds.filter(lambda _, indices: (indices >= (b * BATCH_SIZE)) and (indices < ((b+1) * BATCH_SIZE)), with_indices = True, input_columns = "image_status")
-		return_values = []
-		if with_indices:
-			return_values.append(b)
+		batch = ds.filter(lambda _, indices: (indices >= (b * batch_size)) and (indices < ((b+1) * batch_size)), with_indices = True, input_columns = "image_status")
 		
 		if only_images:
-			return_values.append(np.asarray(batch["image_array"]))
+			yield np.asarray(batch["image_array"])
 		else:
-			return_values.append(batch)
-		
-		yield return_values
+			yield batch
 
 # def load_sbu_and_return_gen(load_local_path = None, save_local_path = None, with_indices = False, only_images = True):
 # 	if load_local_path is not None:
