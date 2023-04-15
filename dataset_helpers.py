@@ -9,7 +9,7 @@ import requests
 from imports import Image, np, skimage
 from datasets import load_dataset
 from datasets.utils.file_utils import get_datasets_user_agent
-from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH
+from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH, IMAGE_HEIGHT, IMAGE_WIDTH
 
 USER_AGENT = get_datasets_user_agent()
 
@@ -52,7 +52,7 @@ def fetch_single_image(image_url, timeout=None, retries=0):
 	return image
 
 default_image = np.array(Image.open(io.BytesIO(requests.get("http://static.flickr.com/2723/4385058960_b0f291553e.jpg").content)))
-preproc_im = resize_scale_and_pad(default_image, 128, 128)
+preproc_im = resize_scale_and_pad(default_image, IMAGE_HEIGHT, IMAGE_WIDTH)
 
 def fetch_images(batch, num_threads, timeout=None, retries=0):
 	fetch_single_image_with_args = partial(fetch_single_image, timeout=timeout, retries=retries)
@@ -67,7 +67,7 @@ def fetch_images(batch, num_threads, timeout=None, retries=0):
 				i = np.array(item)
 				if (len(i.shape) == 3) and (i.shape[-1] == 3):
 					status.append(True)
-					items.append(resize_scale_and_pad(i, 128, 128))
+					items.append(resize_scale_and_pad(i, IMAGE_HEIGHT, IMAGE_WIDTH))
 				else:
 					status.append(False)
 					items.append(preproc_im)
