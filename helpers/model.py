@@ -16,7 +16,7 @@ class ResBlock(tf.keras.layers.Layer):
 			tf.keras.layers.Activation(tf.keras.activations.relu),
 			tf.keras.layers.Conv2D(mid_channels, kernel_size = 3, strides = 1, padding = "same"),
 			tf.keras.layers.Activation(tf.keras.activations.relu),
-			tf.keras.layers.Conv2D(out_channels, kernel_size = 3, strides = 1, padding = "valid")
+			tf.keras.layers.Conv2D(out_channels, kernel_size = 3, strides = 1, padding = "same")
 		]
 
 		if bn:
@@ -31,31 +31,33 @@ class ResBlock(tf.keras.layers.Layer):
 
 
 
-def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), batchnorm = True, name="encoder"):
+def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), batchnorm = True, kernel_size = 3, name="encoder"):
 	"""
 	Construct Convolutional Encoder
 	Args:
 		- latent_dim = EMBEDDING_DIM: embedding size for auto-encoder
+		- input_shape = (IMAGE_HEIGHT, IMAGE_WIDTH, 3): input shape
 		- batchnorm = True: use of BatchNormalization layers in residual blocks
+		- kernel_size = 3: Kernel size for all convolutional layers except output
 		- name = "encoder": name of model
 	Returns:
 		- tensorflow.keras.Model
 	"""
 	encoder_inputs = tf.keras.Input(shape=input_shape)
 
-	conv_init = tf.keras.layers.Conv2D(latent_dim, 4, padding = "same")(encoder_inputs)
+	conv_init = tf.keras.layers.Conv2D(latent_dim, kernel_size, padding = "same")(encoder_inputs)
 
 	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(conv_init)
 	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
 
-	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(resnorm1)
+	conv1 = tf.keras.layers.Conv2D(latent_dim, kernel_size, strides = 2, padding = "same")(resnorm1)
 	norm1 = tf.keras.layers.BatchNormalization()(conv1)
 	relu1 = tf.keras.activations.relu(norm1)
 
 	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(relu1)
 	resnorm2 = tf.keras.layers.BatchNormalization()(res2)
 
-	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(resnorm2)
+	conv2 = tf.keras.layers.Conv2D(latent_dim, kernel_size, strides = 2, padding = "same")(resnorm2)
 	norm2 = tf.keras.layers.BatchNormalization()(conv2)
 	relu2 = tf.keras.activations.relu(norm2)
 
@@ -66,13 +68,15 @@ def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH
 	return tf.keras.Model(encoder_inputs, encoder_outputs, name=name)
 
 
-def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchnorm = True, name="decoder"):
+def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchnorm = True, kernel_size = 3, name="decoder"):
 	"""
 	Constructs Convolutional Decoder
 	Args:
 		- input_shape: input shape of decoder
 		- latent_dim = EMBEDDING_DIM: embedding size for auto-encoder
 		- num_channels = 3: number of output channels (RGB)
+		- batchnorm = True: use Batch Normalization or not
+		- kernel_size = 3: Kernel size for all convolutional layers except output
 		- name = "decoder": name of model
 	Returns:
 		- tensorflow.keras.Model
@@ -82,14 +86,14 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchno
 	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(decoder_inputs)
 	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
 
-	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(resnorm1)
+	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = kernel_size, strides = 2, padding = "same")(resnorm1)
 	norm1 = tf.keras.layers.BatchNormalization()(conv1)
 	relu1 = tf.keras.activations.relu(norm1)
 
 	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(relu1)
 	resnorm2 = tf.keras.layers.BatchNormalization()(res2)
 
-	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(resnorm2)
+	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = kernel_size, strides = 2, padding = "same")(resnorm2)
 	norm2 = tf.keras.layers.BatchNormalization()(conv2)
 	relu2 = tf.keras.activations.relu(norm2)
 
