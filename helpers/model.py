@@ -29,6 +29,8 @@ class ResBlock(tf.keras.layers.Layer):
 		return x + self.convs(x)
 
 
+
+
 def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH, 3), batchnorm = True, name="encoder"):
 	"""
 	Construct Convolutional Encoder
@@ -41,22 +43,28 @@ def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH
 	"""
 	encoder_inputs = tf.keras.Input(shape=input_shape)
 
-	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(encoder_inputs)
+	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(encoder_inputs)
+	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
+
+	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(resnorm1)
 	norm1 = tf.keras.layers.BatchNormalization()(conv1)
 	relu1 = tf.keras.activations.relu(norm1)
-	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(relu1)
+
+	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(relu1)
+	resnorm2 = tf.keras.layers.BatchNormalization()(res2)
+
+	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(resnorm2)
 	norm2 = tf.keras.layers.BatchNormalization()(conv2)
 	relu2 = tf.keras.activations.relu(norm2)
 
-	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(relu2)
-	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
-	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(resnorm1)
-	encoder_outputs = tf.keras.layers.BatchNormalization()(res2)
+	res3 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock3")(relu2)
+	
+	encoder_outputs = tf.keras.layers.BatchNormalization()(res3)
 
 	return tf.keras.Model(encoder_inputs, encoder_outputs, name=name)
 
 
-def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, name="decoder"):
+def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchnorm = True, name="decoder"):
 	"""
 	Constructs Convolutional Decoder
 	Args:
@@ -69,19 +77,24 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, name="d
 	"""
 	decoder_inputs = tf.keras.Input(shape=input_shape)
 
-	res1 = ResBlock(latent_dim, name = f"{name}_resblock1")(decoder_inputs)
+	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(decoder_inputs)
 	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
-	res2 = ResBlock(latent_dim, name = f"{name}_resblock2")(resnorm1)
 
-	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(res2)
+	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(resnorm1)
 	norm1 = tf.keras.layers.BatchNormalization()(conv1)
 	relu1 = tf.keras.activations.relu(norm1)
 
-	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(relu1)
+	res2 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock2")(relu1)
+	resnorm2 = tf.keras.layers.BatchNormalization()(res2)
+
+	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(resnorm2)
 	norm2 = tf.keras.layers.BatchNormalization()(conv2)
 	relu2 = tf.keras.activations.relu(norm2)
 
-	decoder_outputs = tf.keras.layers.Conv2D(num_channels, kernel_size=1, padding = "valid")(relu2)
+	conv3 = tf.keras.layers.Conv2D(latent_dim, kernel_size = 4, padding = "same")(relu2)
+	norm3 = tf.keras.layers.BatchNormalization()(conv3)
+
+	decoder_outputs = ResBlock(num_channels, bn = batchnorm, name = f"{name}_resblock3")(norm3)
 
 	decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
 
