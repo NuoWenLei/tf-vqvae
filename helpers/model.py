@@ -16,7 +16,7 @@ class ResBlock(tf.keras.layers.Layer):
 			tf.keras.layers.Activation(tf.keras.activations.relu),
 			tf.keras.layers.Conv2D(mid_channels, kernel_size = 3, strides = 1, padding = "same"),
 			tf.keras.layers.Activation(tf.keras.activations.relu),
-			tf.keras.layers.Conv2D(out_channels, kernel_size = 1, strides = 1, padding = "valid")
+			tf.keras.layers.Conv2D(out_channels, kernel_size = 3, strides = 1, padding = "valid")
 		]
 
 		if bn:
@@ -98,11 +98,18 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchno
 
 	decoder_outputs = tf.keras.layers.Conv2D(num_channels, kernel_size = 1, padding = "valid")(resnorm3)
 
-	decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
+	# decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
 
-	return tf.keras.Model(decoder_inputs, decoder_tanh, name=name)
+	return tf.keras.Model(decoder_inputs, decoder_outputs, name=name)
 
-def get_image_vqvae(latent_dim=EMBEDDING_DIM, num_embeddings=NUM_EMBEDDINGS, image_shape=(IMAGE_HEIGHT, IMAGE_WIDTH), num_channels = 3, ema = True, name = "vq_vae"):
+def get_image_vqvae(
+		latent_dim=EMBEDDING_DIM,
+		num_embeddings=NUM_EMBEDDINGS,
+		image_shape=(IMAGE_HEIGHT, IMAGE_WIDTH),
+		num_channels = 3,
+		ema = True,
+		batchnorm = True,
+		name = "vq_vae"):
 	"""
 	Constructs VQ-VAE for Images
 	Args:
@@ -110,6 +117,7 @@ def get_image_vqvae(latent_dim=EMBEDDING_DIM, num_embeddings=NUM_EMBEDDINGS, ima
 		- num_embeddings = NUM_EMBEDDINGS: number of codes in the codebook
 		- num_channels = 3: number of output channels (RGB)
 		- ema = True: use Vector Quantizer Exponential Moving Average or normal
+		- batchnorm = True: use Batch Normalization or not
 		- name = "vq_vae": name of model
 	Returns:
 		- tensorflow.keras.Model
@@ -127,11 +135,11 @@ def get_image_vqvae(latent_dim=EMBEDDING_DIM, num_embeddings=NUM_EMBEDDINGS, ima
 			num_embeddings = num_embeddings,
 			commitment_cost=COMMITMENT_COST,
 			name="vector_quantizer")
-	encoder = get_encoder(latent_dim = latent_dim, input_shape=image_shape + (num_channels,))
+	encoder = get_encoder(latent_dim = latent_dim, input_shape=image_shape + (num_channels,), batchnorm=batchnorm)
 	inputs = tf.keras.Input(shape=image_shape + (num_channels,))
 	encoder.build(image_shape + (num_channels,))
 	encoder_outputs = encoder(inputs)
-	decoder = get_decoder(encoder.output_shape[1:], latent_dim = latent_dim)
+	decoder = get_decoder(encoder.output_shape[1:], latent_dim = latent_dim, batchnorm=batchnorm)
 	quantized_latents = vq_layer(encoder_outputs)
 	reconstructions = decoder(quantized_latents)
 	vq_vae = tf.keras.Model(inputs, reconstructions, name=name)
