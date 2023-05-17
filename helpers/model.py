@@ -77,7 +77,11 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, name="d
 	norm1 = tf.keras.layers.BatchNormalization()(conv1)
 	relu1 = tf.keras.activations.relu(norm1)
 
-	decoder_outputs = tf.keras.layers.Conv2DTranspose(num_channels, kernel_size=1, padding = "valid")(relu1)
+	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same")(relu1)
+	norm2 = tf.keras.layers.BatchNormalization()(conv2)
+	relu2 = tf.keras.activations.relu(norm2)
+
+	decoder_outputs = tf.keras.layers.Conv2DTranspose(num_channels, kernel_size=1, padding = "valid")(relu2)
 
 	decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
 
