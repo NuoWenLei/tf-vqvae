@@ -6,10 +6,10 @@ import io
 import urllib
 import requests
 
-from imports import Image, np, skimage
+from helpers.imports import Image, np, skimage
 from datasets import load_dataset
 from datasets.utils.file_utils import get_datasets_user_agent
-from constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH, IMAGE_HEIGHT, IMAGE_WIDTH
+from helpers.constants import NUM_THREADS, NUM_RETRIES, NUM_TIMEOUT, BATCH_SIZE, LOCAL_DATASET_PATH, IMAGE_HEIGHT, IMAGE_WIDTH
 
 USER_AGENT = get_datasets_user_agent()
 

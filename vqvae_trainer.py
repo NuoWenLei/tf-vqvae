@@ -1,7 +1,7 @@
-from dataset_helpers import load_dataset_by_splits, fetch_images_of_dataset, iter_dataset_by_batch
-from model import get_image_vqvae
-from constants import LOCAL_DATASET_PATH, BATCH_SIZE
-from imports import tf
+from helpers.dataset_helpers import load_dataset_by_splits, fetch_images_of_dataset, iter_dataset_by_batch
+from helpers.model import get_image_vqvae
+from helpers.constants import LOCAL_DATASET_PATH, BATCH_SIZE
+from helpers.imports import tf
 import os
 
 def main():
