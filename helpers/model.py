@@ -43,7 +43,9 @@ def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH
 	"""
 	encoder_inputs = tf.keras.Input(shape=input_shape)
 
-	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(encoder_inputs)
+	conv_init = tf.keras.layers.Conv2D(latent_dim, 4, padding = "same")(encoder_inputs)
+
+	res1 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock1")(conv_init)
 	resnorm1 = tf.keras.layers.BatchNormalization()(res1)
 
 	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same")(resnorm1)
