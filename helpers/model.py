@@ -91,10 +91,10 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_channels = 3, batchno
 	norm2 = tf.keras.layers.BatchNormalization()(conv2)
 	relu2 = tf.keras.activations.relu(norm2)
 
-	conv3 = tf.keras.layers.Conv2D(latent_dim, kernel_size = 4, padding = "same")(relu2)
-	norm3 = tf.keras.layers.BatchNormalization()(conv3)
+	res3 = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock3")(relu2)
+	resnorm3 = tf.keras.layers.BatchNormalization()(res3)
 
-	decoder_outputs = ResBlock(num_channels, bn = batchnorm, name = f"{name}_resblock3")(norm3)
+	decoder_outputs = tf.keras.layers.Conv2D(num_channels, kernel_size = 1, padding = "valid")(resnorm3)
 
 	decoder_tanh = tf.keras.activations.tanh(decoder_outputs)
 
