@@ -124,7 +124,7 @@ def get_image_vqvae(
 	inputs = tf.keras.Input(shape=image_shape + (num_channels,))
 	encoder.build(image_shape + (num_channels,))
 	encoder_outputs = encoder(inputs)
-	decoder = get_decoder(encoder.output_shape[1:], latent_dim = latent_dim, batchnorm=batchnorm)
+	decoder = get_decoder(encoder.output_shape[1:], latent_dim = latent_dim)
 	quantized_latents = vq_layer(encoder_outputs)
 	reconstructions = decoder(quantized_latents)
 	vq_vae = tf.keras.Model(inputs, reconstructions, name=name)
