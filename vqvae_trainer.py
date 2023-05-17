@@ -4,6 +4,19 @@ from helpers.constants import LOCAL_DATASET_PATH, BATCH_SIZE
 from helpers.imports import tf
 import os
 
+def train_batch_gen(ds, batch_size):
+  i = 0
+  num_batches = len(ds) // batch_size
+  gen = iter_dataset_by_batch(ds, batch_size = batch_size, only_images = True)
+  while True:
+    batch = next(gen)
+    i += 1
+    if i == num_batches:
+      ds = ds.shuffle()
+      gen = iter_dataset_by_batch(ds, batch_size = batch_size)
+      i = 0
+    yield batch, batch
+
 def main():
     # TODO: steps:
 	# - load dataset splits
@@ -12,8 +25,10 @@ def main():
 	else:
 		splits = load_dataset_by_splits()
 	# - load model
-	model = get_image_vqvae()
-	model.compile(optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3))
+	model = get_image_vqvae(ema = True)
+	model.compile(
+		optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3),
+		metrics = ["mse"])
 	# - iterate through each split
 	for split in splits:
 		# - run training according to the add_loss method in Keras
