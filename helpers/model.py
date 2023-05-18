@@ -14,9 +14,9 @@ class ResBlock(tf.keras.layers.Layer):
 
 		layers = [
 			tf.keras.layers.Activation(tf.keras.activations.relu),
-			tf.keras.layers.Conv2D(mid_channels, kernel_size = 3, strides = 1, padding = "same", use_bias = False),
+			tf.keras.layers.Conv2D(mid_channels, kernel_size = 3, strides = 1, padding = "same", use_bias = True),
 			tf.keras.layers.Activation(tf.keras.activations.relu),
-			tf.keras.layers.Conv2D(out_channels, kernel_size = 1, strides = 1, padding = "valid", use_bias = False)
+			tf.keras.layers.Conv2D(out_channels, kernel_size = 1, strides = 1, padding = "valid", use_bias = True)
 		]
 
 		if bn:
@@ -42,11 +42,13 @@ def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH
 	encoder_inputs = tf.keras.Input(shape=input_shape)
 
 	conv1 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same", use_bias = False)(encoder_inputs)
-	# conv1 = tf.keras.layers.BatchNormalization()(conv1)
-	relu1 = tf.keras.activations.relu(conv1)
-	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same", use_bias = False)(relu1)
-	# conv2 = tf.keras.layers.BatchNormalization()(conv2)
-	x = tf.keras.activations.relu(conv2)
+	conv1 = tf.keras.layers.LeakyReLU()(conv1)
+	conv1 = tf.keras.layers.BatchNormalization()(conv1)
+	
+	conv2 = tf.keras.layers.Conv2D(latent_dim, 4, strides = 2, padding = "same", use_bias = False)(conv1)
+	conv2 = tf.keras.layers.LeakyReLU()(conv2)
+	conv2 = tf.keras.layers.BatchNormalization()(conv2)
+	x = conv2
 
 	for i in range(num_resblocks):
 		x = ResBlock(latent_dim, bn = batchnorm, name = f"{name}_resblock{i}")(x)
@@ -69,22 +71,22 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_resblocks = 2, num_ch
 	"""
 	decoder_inputs = tf.keras.Input(shape=input_shape)
 
-	x = tf.keras.layers.Conv2D(latent_dim, kernel_size = 4, strides = 1)(decoder_inputs)
+	x = tf.keras.layers.Conv2D(latent_dim, kernel_size = 4, strides = 1, padding = "same", use_bias = False)(decoder_inputs)
 
 	for i in range(num_resblocks):
 		x = ResBlock(latent_dim, name = f"{name}_resblock{i}")(x)
 
 	conv1 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size = 4, strides = 2, padding = "same", use_bias = False)(x)
-	# conv1 = tf.keras.layers.BatchNormalization()(conv1)
-	relu1 = tf.keras.activations.relu(conv1)
+	conv1 = tf.keras.layers.LeakyReLU()(conv1)
+	conv1 = tf.keras.layers.BatchNormalization()(conv1)
 
-	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size=4, strides = 2, padding = "same", use_bias = False)(relu1)
-	# conv2 = tf.keras.layers.BatchNormalization()(conv2)
-	relu2 = tf.keras.activations.relu(conv2)
+	conv2 = tf.keras.layers.Conv2DTranspose(latent_dim, kernel_size=4, strides = 2, padding = "same", use_bias = False)(conv1)
+	conv2 = tf.keras.layers.LeakyReLU()(conv2)
+	conv2 = tf.keras.layers.BatchNormalization()(conv2)
 
-	decoder_outputs = tf.keras.layers.Conv2DTranspose(num_channels, kernel_size=4, padding = "same", use_bias = False)(relu2)
+	decoder_outputs = tf.keras.layers.Conv2DTranspose(num_channels, kernel_size=4, padding = "same", use_bias = False)(conv2)
 
-	# decoder_outputs = tf.keras.activations.tanh(decoder_outputs)
+	decoder_outputs = tf.keras.activations.tanh(decoder_outputs)
 
 	return tf.keras.Model(decoder_inputs, decoder_outputs, name=name)
 
