@@ -39,7 +39,7 @@ class VQVAETrainer(tf.keras.models.Model):
         ]
 
     def train_step(self, x):
-        variance = tf.constant(tf.math.reduce_variance(x))
+        variance = tf.math.reduce_variance(x)
         with tf.GradientTape() as tape:
             # Outputs from the VQ-VAE.
             reconstructions = self.vqvae(x)
