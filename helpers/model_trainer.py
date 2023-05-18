@@ -28,7 +28,7 @@ class VQVAETrainer(tf.keras.models.Model):
         )
         self.vq_loss_tracker = tf.keras.metrics.Mean(name=f"{name}_vq_loss")
 
-        self.data_variance_tracker = tf.keras.metrics.Metric(name=f"{name}_data_variance")
+        self.data_variance_tracker = tf.keras.metrics.Mean(name=f"{name}_data_variance")
 
     @property
     def metrics(self):
