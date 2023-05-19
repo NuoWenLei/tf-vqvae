@@ -34,6 +34,8 @@ def get_encoder(latent_dim=EMBEDDING_DIM, input_shape=(IMAGE_HEIGHT, IMAGE_WIDTH
 	Construct Convolutional Encoder
 	Args:
 		- latent_dim = EMBEDDING_DIM: embedding size for auto-encoder
+		- input_shape = (IMAGE_HEIGHT, IMAGE_WIDTH, 3): shape of input
+		- num_resblocks = 2: number of residual convolution blocks
 		- batchnorm = True: use of BatchNormalization layers in residual blocks
 		- name = "encoder": name of model
 	Returns:
@@ -64,6 +66,7 @@ def get_decoder(input_shape, latent_dim=EMBEDDING_DIM, num_resblocks = 2, num_ch
 	Args:
 		- input_shape: input shape of decoder
 		- latent_dim = EMBEDDING_DIM: embedding size for auto-encoder
+		- num_resblocks = 2: number of residual convolution blocks
 		- num_channels = 3: number of output channels (RGB)
 		- name = "decoder": name of model
 	Returns:
@@ -103,6 +106,7 @@ def get_image_vqvae(
 	Args:
 		- latent_dim = EMBEDDING_DIM: embedding size for auto-encoder
 		- num_embeddings = NUM_EMBEDDINGS: number of codes in the codebook
+		- image_shape = (IMAGE_HEIGHT, IMAGE_WIDTH): height + width of an image
 		- num_channels = 3: number of output channels (RGB)
 		- ema = True: use Vector Quantizer Exponential Moving Average or normal
 		- batchnorm = True: use Batch Normalization or not

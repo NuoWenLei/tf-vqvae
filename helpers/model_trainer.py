@@ -3,6 +3,9 @@ from helpers.model import get_image_vqvae
 from helpers.constants import *
 
 class VQVAETrainer(tf.keras.models.Model):
+    """
+    Trainer wrapper class for VQ-VAE
+    """
     def __init__(self,
                  latent_dim=EMBEDDING_DIM,
                  num_embeddings=NUM_EMBEDDINGS,
@@ -10,10 +13,24 @@ class VQVAETrainer(tf.keras.models.Model):
                  use_ema = True,
                  use_batchnorm = True,
                  name = "vqvae_trainer"):
+        """
+        Create a VQVAETrainer object.
+
+        Args:
+        - latent_dim = EMBEDDING_DIM: size of latent dimension for each embedding
+        - num_embeddings = NUM_EMBEDDINGS: number of embeddings to store
+        - image_shape = (IMAGE_HEIGHT, IMAGE_WIDTH): height and width of each image
+        - use_ema = True: whether to use Exponential Moving Average for discrete embedding updates
+        - use_batchnorm = True: whether to use Batch Normalization in Residual Convolution Blocks
+
+        Returns:
+        - VQVAETrainer object
+        """
         super().__init__(name = name)
         self.latent_dim = latent_dim
         self.num_embeddings = num_embeddings
 
+        # create image vqvae
         self.vqvae = get_image_vqvae(
             latent_dim = self.latent_dim,
             num_embeddings = self.num_embeddings,
@@ -22,6 +39,7 @@ class VQVAETrainer(tf.keras.models.Model):
             ema = use_ema,
             batchnorm = use_batchnorm)
 
+        # create metric trackers that update during training
         self.total_loss_tracker = tf.keras.metrics.Mean(name=f"{name}_total_loss")
         self.reconstruction_loss_tracker = tf.keras.metrics.Mean(
             name=f"{name}_reconstruction_loss"
@@ -36,10 +54,13 @@ class VQVAETrainer(tf.keras.models.Model):
             self.total_loss_tracker,
             self.reconstruction_loss_tracker,
             self.vq_loss_tracker,
+            self.data_variance_tracker
         ]
 
     def train_step(self, x):
+        # Calculate variance per batch
         variance = tf.math.reduce_variance(x)
+
         with tf.GradientTape() as tape:
             # Outputs from the VQ-VAE.
             reconstructions = self.vqvae(x)
